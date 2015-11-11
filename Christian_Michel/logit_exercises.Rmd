@@ -11,32 +11,72 @@ output: pdf_document
 setwd('~/Box Sync/abarciausksas/15D011 Economics for the Era of Big Data/Christian Michel/PS3/')
 
 library(foreign)
+
+# Load data
 data <- read.dta('cars.dta')
 
 households <- unique(data$pop) / 3
-
-# Market Share functions
-# Assumption: model is ~ product and is unique per brand
-inside_market_share <- function(model) {
-  # Sum qu (number of cars sold)
-  sum(subset(data, co == model)[,'qu']) / households
-}
-outside_market_share <- 1 - sum(data[,'qu']) / households
-data$inside_market_share <- sapply(data$co, inside_market_share)
-
+outside_market_share <- (households - sum(data[,'qu'])) / households
+data$inside_market_share <- data$qu/households
 
 # hp: horsepower
 # li: fuel consumption in liters per 100 km
 # wi, he: width and height in cm
 # cy: displacement (in cc)
-product_characteristics_cols <- c('hp', 'li', 'wi', 'he', 'cy')
+# cla: factor(segment)
 
-# demand_k = X_k*b - a*p_k + e_k
-data$utility <- log(data$inside_market_share) - log(outside_market_share)
-# install.packages('nnet')
-model <- lm(utility ~ hp + li + wi + he + cy + princ, data = data)
+data$demand <- log(data$inside_market_share) - log(outside_market_share)
+data.observables <- data[,c('demand', 'hp', 'li', 'wi', 'he', 'cy', 'brd', 'cla', 'princ')]
+
+data.observables$brd <- factor(data$brd)
+data.observables$cla <- factor(data$cla)
+
+model.1 <- lm(demand ~ ., data = data.observables)
+summary(model.1)
 ```
 
+## 2. Discuss endogeneity problems and how you are going to treat them.
 
+Endogeneity problems arise when unobservable characteristics are correlated with the regressors. In this dataset, the effect of price may be correlated with unobservable characteristics like style. Therefore, any estimate of the effect of price may be biased by these unobservable characteristics.
 
+We are going to treat them by using an instrumental variable which is correlated with price but not with unobservables. We expect the instrumental variable to be correlated with the demand but only through price. We have selected `origin` as our instrumental variable
+
+## 3.
+
+```{r}
+# Want to regress price on our instrumental variables which will be defined as the sum of the characteristics for cars in different segments
+calculate_iv <- function(row, characteristic) {
+  # other_products not in our segment
+  segment <- row['cla']
+  other_products <- subset(data.observables, cla != segment)
+  sum(other_products[,characteristic])
+}
+
+data.observables$iv.hp <- apply(data.observables, 1, function(row) calculate_iv(row, 'hp'))
+data.observables$iv.li <- apply(data.observables, 1, function(row) calculate_iv(row, 'li'))
+data.observables$iv.wi <- apply(data.observables, 1, function(row) calculate_iv(row, 'wi'))
+data.observables$iv.he <- apply(data.observables, 1, function(row) calculate_iv(row, 'he'))
+data.observables$iv.cy <- apply(data.observables, 1, function(row) calculate_iv(row, 'cy'))
+
+price_model <- lm(princ ~ iv.hp + iv.li + iv.wi + iv.he + iv.cy, data = data.observables)
+data.observables$priceiv <- fitted.values(price_model)
+
+model.2 <- lm(demand ~ hp + li + wi + he + brd + cla + priceiv, data = data.observables)
+summary(model.2)
+```
+
+## 4. Price elasticities
+
+```{r}
+alpha <- coefficients(model.2)['priceiv'][[1]]
+
+# Own price elasticity is the elasticity of demand for project j given a change in price j
+data$elasticity.own <- -alpha*(1-data$inside_market_share)*(data$priceiv)
+# Cross price elasticity is the elasticity of demand for project x given a change in price j
+# We can calculate the cross price elasticity for every product
+data$elasticity.cross <- alpha*(data$inside_market_share)*data$priceiv
+
+plot(data$priceiv, data$elasticity.cross, col='darkorange2')
+points(data$priceiv, data$elasticity.own, col='darkolivegreen3')
+```
 
