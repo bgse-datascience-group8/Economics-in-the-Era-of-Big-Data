@@ -26,12 +26,11 @@ data$inside_market_share <- data$qu/households
 # cla: factor(segment)
 
 data$demand <- log(data$inside_market_share) - log(outside_market_share)
-data.observables <- data[,c('demand', 'hp', 'li', 'wi', 'he', 'cy', 'brd', 'cla', 'princ')]
 
-data.observables$brd <- factor(data.observables$brd)
-data.observables$cla <- factor(data.observables$cla)
+data$brd <- factor(data$brd)
+data$cla <- factor(data$cla)
 
-model.1 <- lm(demand ~ 0 + ., data = data.observables)
+model.1 <- lm(demand ~ hp + li + wi + he + cy + cla + princ, data = data)
 summary(model.1)
 ```
 
@@ -43,26 +42,28 @@ We are going to treat them by using an instrumental variable which is correlated
 
 ## 3. Estimate the demand equation of the logit model with and without instrumenting for price.
 
+We estimated th demand equation of the logit model without instrumenting for price in part 1.
+
 ```{r}
 # Want to regress price on our instrumental variables which will be defined as the sum of the characteristics for cars in different segments
 calculate_iv <- function(row, characteristic) {
   # other_products not in our segment
   segment <- row['cla']
-  other_products <- subset(data.observables, cla != segment)
+  other_products <- subset(data, cla != segment)
   sum(other_products[,characteristic])
 }
 
-data.observables$iv.hp <- apply(data.observables, 1, function(row) calculate_iv(row, 'hp'))
-data.observables$iv.li <- apply(data.observables, 1, function(row) calculate_iv(row, 'li'))
-data.observables$iv.wi <- apply(data.observables, 1, function(row) calculate_iv(row, 'wi'))
-data.observables$iv.he <- apply(data.observables, 1, function(row) calculate_iv(row, 'he'))
-data.observables$iv.cy <- apply(data.observables, 1, function(row) calculate_iv(row, 'cy'))
+data$iv.hp <- apply(data, 1, function(row) calculate_iv(row, 'hp'))
+data$iv.li <- apply(data, 1, function(row) calculate_iv(row, 'li'))
+data$iv.wi <- apply(data, 1, function(row) calculate_iv(row, 'wi'))
+data$iv.he <- apply(data, 1, function(row) calculate_iv(row, 'he'))
+data$iv.cy <- apply(data, 1, function(row) calculate_iv(row, 'cy'))
 
-price_model <- lm(princ ~ hp + li + wi + he + cy + iv.hp + iv.li + iv.wi + iv.he + iv.cy, data = data.observables)
-data.observables$priceiv <- fitted.values(price_model)
+price_model <- lm(princ ~ hp + li + wi + he + cy + iv.hp + iv.li + iv.wi + iv.he + iv.cy, data = data)
+data$priceiv <- fitted.values(price_model)
 
-# Removed segment
-model.2 <- lm(demand ~ hp + li + wi + he + cy + priceiv, data = data.observables)
+# Instrumented price model
+model.2 <- lm(demand ~ hp + li + wi + he + cy + priceiv, data = data)
 summary(model.2)
 ```
 
@@ -72,10 +73,10 @@ summary(model.2)
 alpha <- coefficients(model.2)['priceiv'][[1]]
 
 # Own price elasticity is the elasticity of demand for project j given a change in price j
-data$elasticity.own <- -alpha*(1-data$inside_market_share)*(data.observables$princ)
+data$elasticity.own <- -alpha*(1-data$inside_market_share)*(data$princ)
 # Cross price elasticity is the elasticity of demand for project x given a change in price j
 # We can calculate the cross price elasticity for every product
-data$elasticity.cross <- alpha*(data$inside_market_share)*data.observables$princ
+data$elasticity.cross <- alpha*(data$inside_market_share)*data$princ
 summary(data$elasticity.own)
 summary(data$elasticity.cross)
 ```
