@@ -1,0 +1,42 @@
+---
+title: "Logit Exercises"
+author: "Aimee Barciauskas, Roger Cusco, Hari S"
+date: "November 11, 2015"
+output: pdf_document
+---
+
+## 1.  Specify a logit demand model model, in which you include observable product characteristics.
+
+```{r}
+setwd('~/Box Sync/abarciausksas/15D011 Economics for the Era of Big Data/Christian Michel/PS3/')
+
+library(foreign)
+data <- read.dta('cars.dta')
+
+households <- unique(data$pop) / 3
+
+# Market Share functions
+# Assumption: model is ~ product and is unique per brand
+inside_market_share <- function(model) {
+  # Sum qu (number of cars sold)
+  sum(subset(data, co == model)[,'qu']) / households
+}
+outside_market_share <- 1 - sum(data[,'qu']) / households
+data$inside_market_share <- sapply(data$co, inside_market_share)
+
+
+# hp: horsepower
+# li: fuel consumption in liters per 100 km
+# wi, he: width and height in cm
+# cy: displacement (in cc)
+product_characteristics_cols <- c('hp', 'li', 'wi', 'he', 'cy')
+
+# demand_k = X_k*b - a*p_k + e_k
+data$utility <- log(data$inside_market_share) - log(outside_market_share)
+# install.packages('nnet')
+model <- lm(utility ~ hp + li + wi + he + cy + princ, data = data)
+```
+
+
+
+
