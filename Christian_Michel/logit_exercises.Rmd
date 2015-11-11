@@ -1,6 +1,6 @@
 ---
 title: "Logit Exercises"
-author: "Aimee Barciauskas, Roger Cusco, Hari S"
+author: "Aimee Barciauskas, Roger Cusco, Hari Subramanyam Sreenivasan"
 date: "November 11, 2015"
 output: pdf_document
 ---
@@ -42,7 +42,7 @@ We are going to treat them by using an instrumental variable which is correlated
 
 ## 3. Estimate the demand equation of the logit model with and without instrumenting for price.
 
-We estimated th demand equation of the logit model without instrumenting for price in part 1.
+We estimated the demand equation of the logit model without instrumenting for price in part 1.
 
 ```{r}
 # Want to regress price on our instrumental variables which will be defined as the sum of the characteristics for cars in different segments
@@ -59,7 +59,7 @@ data$iv.wi <- apply(data, 1, function(row) calculate_iv(row, 'wi'))
 data$iv.he <- apply(data, 1, function(row) calculate_iv(row, 'he'))
 data$iv.cy <- apply(data, 1, function(row) calculate_iv(row, 'cy'))
 
-price_model <- lm(princ ~ hp + li + wi + he + cy + iv.hp + iv.li + iv.wi + iv.he + iv.cy, data = data)
+price_model <- lm(princ ~ iv.hp + iv.li + iv.wi + iv.he + iv.cy, data = data)
 data$priceiv <- fitted.values(price_model)
 
 # Instrumented price model
@@ -90,6 +90,6 @@ summary(data$marginal_cost)
 
 General patterns:
 
-* Cross-price elasticity is positive with values between near 0 and 0.005022. The interpretation is that demand for product j when the price in product k increses is increasing but near zero.
-* Own-price elasticity is negative with values between -2.91 and -0.3. The intpretation is that demand for product j when the price in product j increses is decreasing.
-* Marginal cost is positive between -0.497 and 1.7.
+* Cross-price elasticity is positive but very near zero, with values between near 4.653e-06 and 4.372e-03. The interpretation is that demand for product j when the price in product k increases is increasing but approximately zero. This interpretation could be restated as the change in price of any other product has negligible effect on the demand for product k.
+* Own-price elasticity is negative with values between -2.205 and -0.25. The intpretation is that demand for product j when the price in product j increses is decreasing.
+* Marginal cost is positive between -0.734 and 1.18.
