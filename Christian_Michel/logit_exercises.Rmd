@@ -1,6 +1,6 @@
 ---
 title: "Logit Exercises"
-author: "Aimee Barciauskas, Roger Cusco, Hari Subramanyam Sreenivasan"
+author: "Aimee Barciauskas, Roger Cusco, Hari S"
 date: "November 11, 2015"
 output: pdf_document
 ---
@@ -40,6 +40,8 @@ Endogeneity problems arise when unobservable characteristics are correlated with
 
 We are going to treat them by using an instrumental variable which is correlated with price but not with unobservables. We expect the instrumental variable to be correlated with the demand but only through price. We have selected to sum the characteristics of products in other segments as the instrumental variable.
 
+We will try this instrument in **3** and summarize our conclusions about endogeneity in price in the **Closing Remarks** section at the end of the document.
+
 ## 3. Estimate the demand equation of the logit model with and without instrumenting for price.
 
 We estimated the demand equation of the logit model without instrumenting for price in part 1.
@@ -59,8 +61,10 @@ data$iv.wi <- apply(data, 1, function(row) calculate_iv(row, 'wi'))
 data$iv.he <- apply(data, 1, function(row) calculate_iv(row, 'he'))
 data$iv.cy <- apply(data, 1, function(row) calculate_iv(row, 'cy'))
 
-price_model <- lm(princ ~ iv.hp + iv.li + iv.wi + iv.he + iv.cy, data = data)
+price_model <- lm(princ ~ hp + li + wi + he + cy + iv.hp + iv.li + iv.wi + iv.he + iv.cy, data = data)
 data$priceiv <- fitted.values(price_model)
+# Sanity check
+summary(price_model)
 
 # Instrumented price model
 model.2 <- lm(demand ~ hp + li + wi + he + cy + priceiv, data = data)
@@ -90,6 +94,11 @@ summary(data$marginal_cost)
 
 General patterns:
 
-* Cross-price elasticity is positive but very near zero, with values between near 4.653e-06 and 4.372e-03. The interpretation is that demand for product j when the price in product k increases is increasing but approximately zero. This interpretation could be restated as the change in price of any other product has negligible effect on the demand for product k.
-* Own-price elasticity is negative with values between -2.205 and -0.25. The intpretation is that demand for product j when the price in product j increses is decreasing.
-* Marginal cost is positive between -0.734 and 1.18.
+* Cross-price elasticity is positive with values between near 0 and 0.005022. The interpretation is that demand for product j when the price in product k increses is increasing but near zero.
+* Own-price elasticity is negative with values between -2.91 and -0.3. The intpretation is that demand for product j when the price in product j increses is decreasing.
+* Marginal cost is positive between -0.497 and 1.7.
+
+## Closing Remarks
+
+We found that there was not a great improvement in fit between the instrumented price model when compared with the original model. Further, we found price to show near zero correlation with the residuals. We conclude there is nothing to be gained from this instrumental variable and try a different instrumental variable with additional data available to instrument for price.
+
