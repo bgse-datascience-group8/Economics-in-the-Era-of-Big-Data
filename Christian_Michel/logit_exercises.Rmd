@@ -58,10 +58,10 @@ data.observables$iv.wi <- apply(data.observables, 1, function(row) calculate_iv(
 data.observables$iv.he <- apply(data.observables, 1, function(row) calculate_iv(row, 'he'))
 data.observables$iv.cy <- apply(data.observables, 1, function(row) calculate_iv(row, 'cy'))
 
-price_model <- lm(princ ~ iv.hp + iv.li + iv.wi + iv.he + iv.cy, data = data.observables)
+price_model <- lm(princ ~ cla + brd + iv.hp + iv.li + iv.wi + iv.he + iv.cy, data = data.observables)
 data.observables$priceiv <- fitted.values(price_model)
 
-model.2 <- lm(demand ~ hp + li + wi + he + brd + cla + priceiv, data = data.observables)
+model.2 <- lm(demand ~ priceiv, data = data.observables)
 summary(model.2)
 ```
 
@@ -71,12 +71,9 @@ summary(model.2)
 alpha <- coefficients(model.2)['priceiv'][[1]]
 
 # Own price elasticity is the elasticity of demand for project j given a change in price j
-data$elasticity.own <- -alpha*(1-data$inside_market_share)*(data$priceiv)
+data$elasticity.own <- -alpha*(1-data$inside_market_share)*(data.observables$priceiv)
 # Cross price elasticity is the elasticity of demand for project x given a change in price j
 # We can calculate the cross price elasticity for every product
-data$elasticity.cross <- alpha*(data$inside_market_share)*data$priceiv
-
-plot(data$priceiv, data$elasticity.cross, col='darkorange2')
-points(data$priceiv, data$elasticity.own, col='darkolivegreen3')
+data$elasticity.cross <- alpha*(data$inside_market_share)*data.observables$priceiv
 ```
 
